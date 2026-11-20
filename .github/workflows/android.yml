@@ -24,8 +24,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle :app:assembleDebug :app:lintDebug
+      - name: Build debug APK
+        run: |
+          if ! gradle :app:assembleDebug --console=plain > "$RUNNER_TEMP/build.log" 2>&1; then
+            cat "$RUNNER_TEMP/build.log"
+            message=$(tail -45 "$RUNNER_TEMP/build.log" | head -c 4000)
+            message=${message//\%/%25}
+            message=${message//$'\n'/%0A}
+            echo "::error::$message"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/build.log"
       - uses: actions/upload-artifact@v4
         with:
           name: rpglauncher-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+      - run: gradle :app:lintDebug
